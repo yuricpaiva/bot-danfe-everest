@@ -1,0 +1,14 @@
+-- Este arquivo deve conter o DDL final da tabela raw.tb_505_previsao_impostos_saida.
+--
+-- Como o arquivo inventario_mysql.json nao estava disponivel na pasta do projeto
+-- durante a criacao inicial, gere o DDL a partir da propria estrutura MySQL
+-- em modo somente leitura:
+--
+--   python src/load_505_previsao_impostos_saida.py --data-inicio 1900-01-01 --data-fim 1900-01-02 --write-create-sql
+--
+-- Para gerar, criar a tabela destino e carregar a janela:
+--
+--   python src/load_505_previsao_impostos_saida.py --data-inicio 2025-01-01 --data-fim 2025-02-01 --write-create-sql --create-table
+--
+-- O SQL gerado preserva os nomes originais das colunas com aspas duplas.
+CREATE SCHEMA IF NOT EXISTS "raw";
