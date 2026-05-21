@@ -12,12 +12,18 @@ from psycopg2.extras import execute_values
 from config import PostgresSettings
 
 
-def quote_pg_identifier(identifier: str) -> str:
-    return f'"{identifier.replace(chr(34), chr(34) * 2)}"'
+def quote_pg_identifier(identifier: str, escape_percent: bool = False) -> str:
+    quoted = identifier.replace(chr(34), chr(34) * 2)
+    if escape_percent:
+        quoted = quoted.replace("%", "%%")
+    return f'"{quoted}"'
 
 
-def qualified_table(schema_name: str, table_name: str) -> str:
-    return f"{quote_pg_identifier(schema_name)}.{quote_pg_identifier(table_name)}"
+def qualified_table(schema_name: str, table_name: str, escape_percent: bool = False) -> str:
+    return (
+        f"{quote_pg_identifier(schema_name, escape_percent=escape_percent)}."
+        f"{quote_pg_identifier(table_name, escape_percent=escape_percent)}"
+    )
 
 
 @contextmanager
@@ -44,11 +50,11 @@ def delete_window(
     start_date: str,
     end_date: str,
 ) -> int:
-    table = qualified_table(schema_name, table_name)
+    table = qualified_table(schema_name, table_name, escape_percent=True)
     sql = f"""
         DELETE FROM {table}
-        WHERE {quote_pg_identifier(date_column)} >= %s
-          AND {quote_pg_identifier(date_column)} < %s
+        WHERE {quote_pg_identifier(date_column, escape_percent=True)} >= %s
+          AND {quote_pg_identifier(date_column, escape_percent=True)} < %s
     """
     with conn.cursor() as cur:
         cur.execute(sql, (start_date, end_date))
@@ -65,8 +71,8 @@ def insert_rows(
     if not rows:
         return 0
 
-    table = qualified_table(schema_name, table_name)
-    quoted_columns = ", ".join(quote_pg_identifier(column) for column in columns)
+    table = qualified_table(schema_name, table_name, escape_percent=True)
+    quoted_columns = ", ".join(quote_pg_identifier(column, escape_percent=True) for column in columns)
     sql = f"INSERT INTO {table} ({quoted_columns}) VALUES %s"
 
     with conn.cursor() as cur:

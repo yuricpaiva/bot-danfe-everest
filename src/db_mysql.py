@@ -11,8 +11,11 @@ from pymysql.cursors import SSCursor
 from config import MySQLSettings
 
 
-def quote_mysql_identifier(identifier: str) -> str:
-    return f"`{identifier.replace('`', '``')}`"
+def quote_mysql_identifier(identifier: str, escape_percent: bool = False) -> str:
+    quoted = identifier.replace("`", "``")
+    if escape_percent:
+        quoted = quoted.replace("%", "%%")
+    return f"`{quoted}`"
 
 
 @contextmanager
@@ -92,13 +95,13 @@ def iter_rows_by_date_window(
     end_date: str,
     chunk_size: int,
 ) -> Iterator[list[tuple[Any, ...]]]:
-    quoted_columns = ", ".join(quote_mysql_identifier(column) for column in columns)
+    quoted_columns = ", ".join(quote_mysql_identifier(column, escape_percent=True) for column in columns)
     sql = f"""
         SELECT {quoted_columns}
-        FROM {quote_mysql_identifier(table_name)}
-        WHERE {quote_mysql_identifier(date_column)} >= %s
-          AND {quote_mysql_identifier(date_column)} < %s
-        ORDER BY {quote_mysql_identifier(date_column)}
+        FROM {quote_mysql_identifier(table_name, escape_percent=True)}
+        WHERE {quote_mysql_identifier(date_column, escape_percent=True)} >= %s
+          AND {quote_mysql_identifier(date_column, escape_percent=True)} < %s
+        ORDER BY {quote_mysql_identifier(date_column, escape_percent=True)}
     """
     with conn.cursor() as cur:
         cur.execute(sql, (start_date, end_date))
